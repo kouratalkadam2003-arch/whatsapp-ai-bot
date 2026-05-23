@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: whatsapp-ai-bot
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_BUSINESS_ID
+        sync: false
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: WEBHOOK_VERIFY_TOKEN
+        sync: false
+      - key: ZAI_API_KEY
+        sync: false
