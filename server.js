@@ -61,12 +61,31 @@ app.get('/webhook', (req, res) => {
   }
 });
 
-// ─── WhatsApp Webhook Handler (POST) ─────────────────────────────────────
+// ─── Debug: Log ALL incoming requests ────────────────────────────────────
+const requestLog = [];
+const MAX_LOG = 50;
+
 app.post('/webhook', async (req, res) => {
   // Always acknowledge receipt quickly
   res.status(200).send('EVENT_RECEIVED');
 
   const body = req.body;
+
+  // Log every incoming request for debugging
+  const logEntry = {
+    time: new Date().toISOString(),
+    object: body.object,
+    hasEntry: !!body.entry,
+    entryCount: body.entry?.length || 0,
+    hasMessages: !!body.entry?.[0]?.changes?.[0]?.value?.messages,
+    hasStatuses: !!body.entry?.[0]?.changes?.[0]?.value?.statuses,
+    hasErrors: !!body.entry?.[0]?.changes?.[0]?.value?.errors,
+    valueType: Object.keys(body.entry?.[0]?.changes?.[0]?.value || {}),
+    fullBody: JSON.stringify(body).substring(0, 500),
+  };
+  console.log('[Webhook POST]', JSON.stringify(logEntry));
+  requestLog.push(logEntry);
+  if (requestLog.length > MAX_LOG) requestLog.shift();
 
   // Validate this is a WhatsApp message event
   if (
@@ -74,6 +93,7 @@ app.post('/webhook', async (req, res) => {
     !body.entry ||
     !body.entry[0]?.changes?.[0]?.value?.messages
   ) {
+    console.log('[Webhook] Not a message event, skipping. Object:', body.object, 'Has messages:', !!body.entry?.[0]?.changes?.[0]?.value?.messages);
     return;
   }
 
@@ -150,6 +170,22 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     conversations: conversations.size,
     timestamp: new Date().toISOString(),
+  });
+});
+
+// ─── Debug: View request logs ────────────────────────────────────────────
+app.get('/debug', (req, res) => {
+  res.status(200).json({
+    totalRequests: requestLog.length,
+    logs: requestLog,
+    activeConversations: conversations.size,
+    config: {
+      hasPhoneId: !!WHATSAPP_PHONE_NUMBER_ID,
+      hasBusinessId: !!WHATSAPP_BUSINESS_ID,
+      hasAccessToken: !!WHATSAPP_ACCESS_TOKEN,
+      hasZaiKey: !!ZAI_API_KEY,
+      hasVerifyToken: !!WEBHOOK_VERIFY_TOKEN,
+    }
   });
 });
 
